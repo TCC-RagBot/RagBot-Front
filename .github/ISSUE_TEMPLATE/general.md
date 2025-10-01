@@ -1,5 +1,5 @@
 ---
-name: Issue Template
+name: Issue Geral
 about: Template padrão para criação de issues
 title: ''
 labels: ''
