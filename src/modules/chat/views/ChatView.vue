@@ -113,11 +113,11 @@
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import HeaderBar from '@/components/HeaderBar.vue'
-import ChatBubble from '@/components/ChatBubble.vue'
-import MessageInput from '@/components/MessageInput.vue'
-import TypingIndicator from '@/components/TypingIndicator.vue'
-import ApiService from '@/services/api'
+import HeaderBar from '@/shared/components/HeaderBar.vue'
+import ChatBubble from '../components/ChatBubble.vue'
+import MessageInput from '../components/MessageInput.vue'
+import TypingIndicator from '../components/TypingIndicator.vue'
+import ApiService from '../services/api'
 
 interface Message {
   id: string
