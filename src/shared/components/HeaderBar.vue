@@ -3,14 +3,69 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo/Brand -->
-        <div class="flex-shrink-0">
-          <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <div class="flex items-center space-x-8">
+          <router-link
+            to="/"
+            class="text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
+          >
             RAGBot UnB
-          </h1>
+          </router-link>
+          
+          <!-- Navigation -->
+          <nav class="hidden md:flex space-x-6">
+            <router-link
+              to="/"
+              :class="[
+                'px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
+                $route.name === 'chat'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+              ]"
+            >
+              Chat
+            </router-link>
+            
+            <router-link
+              to="/documentos"
+              :class="[
+                'px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
+                $route.name === 'documents'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+              ]"
+            >
+              Documentos
+            </router-link>
+          </nav>
         </div>
 
         <!-- Right side controls -->
         <div class="flex items-center space-x-4">
+          <!-- Mobile menu button -->
+          <button
+            @click="toggleMobileMenu"
+            class="md:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Abrir menu de navegação"
+          >
+            <svg
+              v-if="!isMobileMenuOpen"
+              class="w-5 h-5 text-gray-600 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg
+              v-else
+              class="w-5 h-5 text-gray-600 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           <!-- Local time -->
           <div class="hidden sm:block text-sm text-gray-600 dark:text-gray-300 font-mono">
             {{ currentTime }}
@@ -74,6 +129,40 @@
         </div>
       </div>
     </div>
+    
+    <!-- Mobile Navigation Menu -->
+    <div
+      v-if="isMobileMenuOpen"
+      class="md:hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 animate-fade-in"
+    >
+      <div class="px-4 py-2 space-y-1">
+        <router-link
+          to="/"
+          @click="closeMobileMenu"
+          :class="[
+            'block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200',
+            $route.name === 'chat'
+              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+          ]"
+        >
+          Chat
+        </router-link>
+        
+        <router-link
+          to="/documentos"
+          @click="closeMobileMenu"
+          :class="[
+            'block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200',
+            $route.name === 'documents'
+              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+          ]"
+        >
+          Documentos
+        </router-link>
+      </div>
+    </div>
   </header>
 </template>
 
@@ -82,6 +171,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const currentTime = ref('')
 const isDark = ref(false)
+const isMobileMenuOpen = ref(false)
 let timeInterval: number | null = null
 
 const githubUrl = import.meta.env.VITE_GITHUB_URL || 'https://github.com/TCC-RagBot/RagBot-Front'
@@ -120,6 +210,14 @@ const toggleTheme = () => {
     document.documentElement.classList.remove('dark')
     localStorage.setItem('theme', 'light')
   }
+}
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
 }
 
 onMounted(() => {
