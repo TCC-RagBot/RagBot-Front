@@ -1,17 +1,21 @@
 export interface Document {
   id: string
-  title: string
-  type: DocumentType
-  category: DocumentCategory
-  date: string
-  council: string
-  summary: string
+  filename: string
+  file_size_kb: number
+  uploaded_at: string
+  // Campos derivados para compatibilidade com a UI atual
+  title?: string
+  type?: DocumentType
+  category?: DocumentCategory
+  date?: string
+  council?: string
+  summary?: string
   url?: string
-  pageCount: number
-  fileSize: string
-  status: DocumentStatus
-  createdAt: string
-  updatedAt: string
+  pageCount?: number
+  fileSize?: string
+  status?: DocumentStatus
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type DocumentType = 
@@ -35,6 +39,18 @@ export type DocumentStatus =
   | 'archived'
   | 'draft'
 
+// Formato real da API
+export interface ApiDocumentsResponse {
+  documents: {
+    id: string
+    filename: string
+    file_size_kb: number
+    uploaded_at: string
+  }[]
+  total_documents: number
+}
+
+// Formato interno para compatibilidade
 export interface DocumentsResponse {
   documents: Document[]
   total: number

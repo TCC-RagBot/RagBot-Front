@@ -7,6 +7,7 @@ export type {
   DocumentStatus,
   DocumentFilters,
   DocumentsResponse,
+  ApiDocumentsResponse,
   DocumentsPaginationParams 
 } from './types'
 
