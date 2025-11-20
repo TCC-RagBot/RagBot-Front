@@ -130,6 +130,7 @@ const messages = ref<Message[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const lastUserMessage = ref('')
+const conversationId = ref<string | undefined>(undefined)
 
 const exampleQuestions = [
   'Quais são as principais decisões do último conselho universitário?',
@@ -179,9 +180,14 @@ const handleMessageSubmit = async (message: string) => {
   isLoading.value = true
 
   try {
-    const response = await ApiService.sendMessage(message)
+    const response = await ApiService.sendMessage(message, conversationId.value)
     
     if (response.success) {
+      // Salvar o conversation_id para as próximas mensagens
+      if (response.conversationId) {
+        conversationId.value = response.conversationId
+      }
+      
       addMessage('assistant', response.answer)
     } else {
       errorMessage.value = response.error || 'Não foi possível obter a resposta. Tente novamente.'

@@ -1,11 +1,22 @@
 interface ChatMessage {
-  question: string
+  message: string
+  conversation_id?: string
+  max_chunks?: number
 }
 
 interface ChatResponse {
   answer: string
   success: boolean
   error?: string
+  conversationId?: string
+  messageId?: string
+  sources?: Array<{
+    content: string
+    document_id: string
+    chunk_index: number
+    similarity: number
+  }>
+  processingTime?: number
 }
 
 class ApiService {
@@ -15,33 +26,44 @@ class ApiService {
     this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
   }
 
-  async sendMessage(question: string): Promise<ChatResponse> {
-    // In development, return a mock response
-    if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
-      return this.getMockResponse(question)
-    }
-
+  async sendMessage(question: string, conversationId?: string, maxChunks: number = 5): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ask`, {
+      console.log('🔵 [CHAT API] Enviando mensagem para:', `${this.baseUrl}/api/chat`)
+      console.log('🔵 [CHAT API] Payload:', { message: question, conversation_id: conversationId, max_chunks: maxChunks })
+      
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question } satisfies ChatMessage),
+        body: JSON.stringify({ 
+          message: question,
+          conversation_id: conversationId,
+          max_chunks: maxChunks
+        } satisfies ChatMessage),
       })
 
+      console.log('🔵 [CHAT API] Status da resposta:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido' }))
+        console.error('🔴 [CHAT API] Erro na resposta:', errorData)
+        throw new Error(errorData.detail || `Erro HTTP: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('🔵 [CHAT API] Dados recebidos:', data)
       
       return {
-        answer: data.answer || data.response || 'Resposta não encontrada.',
-        success: true
+        answer: data.response || 'Resposta não encontrada.',
+        success: true,
+        conversationId: data.conversation_id,
+        messageId: data.message_id,
+        sources: data.sources,
+        processingTime: data.processing_time
       }
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error)
+      console.error('🔴 [CHAT API] Erro ao enviar mensagem:', error)
       
       return {
         answer: '',

@@ -19,37 +19,42 @@ class DocumentsApiService {
   }
 
   async getDocuments(params: DocumentsPaginationParams): Promise<DocumentsResponse> {
-    // Use mock data if no API URL is configured or if it's the default localhost
-    if (!import.meta.env.VITE_API_BASE_URL || 
-        import.meta.env.VITE_API_BASE_URL === 'http://localhost:8000' ||
-        import.meta.env.DEV) {
-      return this.getMockDocuments(params)
-    }
-
     try {
-      const searchParams = new URLSearchParams()
-      searchParams.append('page', params.page.toString())
-      searchParams.append('limit', params.pageSize.toString())
+      console.log('🔵 [DOCUMENTS API] Fazendo requisição para:', `${this.baseUrl}/api/documents/list`)
       
-      if (params.filters?.search) {
-        searchParams.append('search', params.filters.search)
-      }
-
-      const response = await fetch(`${this.baseUrl}/documents?${searchParams}`, {
+      const response = await fetch(`${this.baseUrl}/api/documents/list`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       })
 
+      console.log('🔵 [DOCUMENTS API] Status da resposta:', response.status, response.statusText)
+
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status}`)
       }
 
       const apiData: ApiDocumentsResponse = await response.json()
+      console.log('🔵 [DOCUMENTS API] Dados recebidos do backend:', apiData)
+      console.log('🔵 [DOCUMENTS API] Total de documentos:', apiData.total_documents)
+      console.log('🔵 [DOCUMENTS API] Documentos array:', apiData.documents)
+      console.log('🔵 [DOCUMENTS API] Tipo de documents:', typeof apiData.documents, Array.isArray(apiData.documents))
       
       // Converter dados da API para o formato interno
-      const convertedDocuments = apiData.documents.map(doc => this.convertApiDocument(doc))
+      const convertedDocuments: Document[] = []
+      
+      if (Array.isArray(apiData.documents)) {
+        for (const doc of apiData.documents) {
+          console.log('🔵 [DOCUMENTS API] Convertendo documento:', doc)
+          const converted = this.convertApiDocument(doc)
+          console.log('🔵 [DOCUMENTS API] Documento convertido:', converted)
+          convertedDocuments.push(converted)
+        }
+      }
+      
+      console.log('🔵 [DOCUMENTS API] Total convertidos:', convertedDocuments.length)
+      console.log('🔵 [DOCUMENTS API] Documentos convertidos:', convertedDocuments)
       
       // Aplicar filtros localmente (já que a API pode não suportar todos)
       let filteredDocuments = this.applyLocalFilters(convertedDocuments, params.filters)
@@ -63,7 +68,7 @@ class DocumentsApiService {
       const total = apiData.total_documents
       const totalPages = Math.ceil(total / params.pageSize)
       
-      return {
+      const result = {
         documents: filteredDocuments,
         total,
         page: params.page,
@@ -71,8 +76,15 @@ class DocumentsApiService {
         totalPages,
         success: true
       }
+      
+      console.log('🟢 [DOCUMENTS API] Retornando resultado final:', result)
+      return result
     } catch (error) {
-      console.error('Erro ao buscar documentos:', error)
+      console.error('🔴 [DOCUMENTS API] Erro ao buscar documentos:', error)
+      console.error('🔴 [DOCUMENTS API] Detalhes do erro:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      })
       
       return {
         documents: [],
@@ -87,20 +99,12 @@ class DocumentsApiService {
   }
 
   async deleteDocument(documentId: string): Promise<{ success: boolean; error?: string }> {
-    // Use mock deletion in development
-    if (!import.meta.env.VITE_API_BASE_URL || 
-        import.meta.env.VITE_API_BASE_URL === 'http://localhost:8000' ||
-        import.meta.env.DEV) {
-      return this.mockDeleteDocument(documentId)
-    }
-
     try {
-      const response = await fetch(`${this.baseUrl}/delete_docs`, {
-        method: 'POST',
+      const response = await fetch(`${this.baseUrl}/api/documents/${documentId}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ document_id: documentId }),
       })
 
       if (!response.ok) {
@@ -113,6 +117,36 @@ class DocumentsApiService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido ao excluir documento'
+      }
+    }
+  }
+
+  async uploadDocument(file: File): Promise<{ success: boolean; error?: string; documentId?: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch(`${this.baseUrl}/api/documents/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido' }))
+        throw new Error(errorData.detail || `Erro HTTP: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      return { 
+        success: true,
+        documentId: data.document_id
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload do documento:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido ao fazer upload'
       }
     }
   }
@@ -138,11 +172,25 @@ class DocumentsApiService {
   /**
    * Converte dados da API para o formato interno da aplicação
    */
-  private convertApiDocument(apiDoc: ApiDocumentsResponse['documents'][0]): Document {
+  private convertApiDocument(apiDoc: {
+    id: string
+    filename: string
+    file_size_kb: number
+    uploaded_at: string
+  }): Document {
+    console.log('🟡 [convertApiDocument] Recebendo:', apiDoc)
+    
     // Extrai informações do filename
     const fileInfo = this.extractFileInfo(apiDoc.filename)
+    console.log('🟡 [convertApiDocument] FileInfo extraído:', fileInfo)
     
-    return {
+    // Extrair data do formato brasileiro
+    const dateMatch = apiDoc.uploaded_at.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+    const dateString = dateMatch 
+      ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` 
+      : new Date().toISOString().split('T')[0]
+    
+    const converted: Document = {
       id: apiDoc.id,
       filename: apiDoc.filename,
       file_size_kb: apiDoc.file_size_kb,
@@ -151,7 +199,7 @@ class DocumentsApiService {
       title: fileInfo.title,
       type: fileInfo.type,
       category: fileInfo.category,
-      date: apiDoc.uploaded_at.split('T')[0], // Usa upload date como data do documento
+      date: dateString,
       council: fileInfo.council,
       summary: `Documento ${fileInfo.type} do ${fileInfo.council}`,
       url: `${this.baseUrl}/documents/${apiDoc.id}/download`,
@@ -161,6 +209,9 @@ class DocumentsApiService {
       createdAt: apiDoc.uploaded_at,
       updatedAt: apiDoc.uploaded_at
     }
+    
+    console.log('🟡 [convertApiDocument] Retornando documento convertido:', converted)
+    return converted
   }
 
   /**
