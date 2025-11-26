@@ -210,6 +210,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <DeleteConfirmationModal
+      :is-visible="showDeleteModal"
+      :document-title="documentToDelete?.title || documentToDelete?.filename || 'Documento'"
+      :is-processing="isDeleting !== null"
+      @confirm="handleDeleteConfirmation"
+      @cancel="handleDeleteCancel"
+    />
   </div>
 </template>
 
@@ -217,6 +226,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import type { Document, DocumentType, DocumentStatus } from '../types'
 import DocumentsApiService from '../services/api'
+import DeleteConfirmationModal from '@/shared/components/DeleteConfirmationModal.vue'
 
 // Props
 interface Props {
@@ -235,6 +245,8 @@ const totalPages = ref(0)
 const isLoading = ref(false)
 const error = ref('')
 const isDeleting = ref<string | null>(null)
+const showDeleteModal = ref(false)
+const documentToDelete = ref<Document | null>(null)
 
 // Computed properties
 const startIndex = computed(() => (currentPage.value - 1) * props.pageSize)
@@ -296,11 +308,15 @@ const goToPage = (page: number) => {
 
 
 
-const deleteDocument = async (document: Document) => {
-  const confirmDelete = confirm(`Tem certeza que deseja excluir o documento "${document.title || document.filename}"?`)
-  
-  if (!confirmDelete) return
+const deleteDocument = (document: Document) => {
+  documentToDelete.value = document
+  showDeleteModal.value = true
+}
 
+const handleDeleteConfirmation = async (password: string) => {
+  if (!documentToDelete.value) return
+
+  const document = documentToDelete.value
   isDeleting.value = document.id
   
   try {
@@ -320,7 +336,10 @@ const deleteDocument = async (document: Document) => {
         loadDocuments()
       }
       
-      // Mostrar mensagem de sucesso (opcional)
+      // Fechar modal e limpar estado
+      showDeleteModal.value = false
+      documentToDelete.value = null
+      
       console.log('Documento excluído com sucesso')
     } else {
       alert(`Erro ao excluir documento: ${result.error}`)
@@ -331,6 +350,11 @@ const deleteDocument = async (document: Document) => {
   } finally {
     isDeleting.value = null
   }
+}
+
+const handleDeleteCancel = () => {
+  showDeleteModal.value = false
+  documentToDelete.value = null
 }
 
 const formatDate = (dateString: string | undefined) => {
