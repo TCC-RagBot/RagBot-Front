@@ -204,7 +204,7 @@ class DocumentsApiService {
       summary: `Documento ${fileInfo.type} do ${fileInfo.council}`,
       url: `${this.baseUrl}/documents/${apiDoc.id}/download`,
       pageCount: Math.ceil(apiDoc.file_size_kb / 50), // Estimativa baseada no tamanho
-      fileSize: `${(apiDoc.file_size_kb / 1024).toFixed(1)} MB`,
+      fileSize: this.formatFileSize(apiDoc.file_size_kb),
       status: 'active' as DocumentStatus,
       createdAt: apiDoc.uploaded_at,
       updatedAt: apiDoc.uploaded_at
@@ -212,6 +212,20 @@ class DocumentsApiService {
     
     console.log('🟡 [convertApiDocument] Retornando documento convertido:', converted)
     return converted
+  }
+
+  /**
+   * Formata o tamanho do arquivo de forma legível
+   */
+  private formatFileSize(sizeInKb: number): string {
+    if (sizeInKb < 1024) {
+      // Mostrar em KB se for menor que 1 MB
+      return `${sizeInKb.toFixed(2)} KB`
+    } else {
+      // Mostrar em MB se for maior ou igual a 1 MB
+      const sizeInMb = sizeInKb / 1024
+      return `${sizeInMb.toFixed(2)} MB`
+    }
   }
 
   /**
@@ -483,7 +497,7 @@ class DocumentsApiService {
         summary: template.summary,
         url: `https://doc.unb.br/documents/doc-${i.toString().padStart(3, '0')}.pdf`,
         pageCount: Math.floor(Math.random() * 50) + 10,
-        fileSize: `${(fileSizeKb / 1024).toFixed(1)} MB`,
+        fileSize: this.formatFileSize(fileSizeKb),
         status,
         createdAt: createdAt.toISOString(),
         updatedAt: updatedAt.toISOString()
